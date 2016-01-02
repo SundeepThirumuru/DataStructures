@@ -14,9 +14,22 @@ public class BinarySearchTree<T> {
         private T value;
         private Node<T> left = null, right = null;
         private Node<T> parent = null;
+        private int depth = 1;
         public String toString()
         {
             return value.toString();
+        }
+
+        public int getDepth()
+        {
+            return depth;
+        }
+
+        public void updateDepth()
+        {
+            int leftDepth = left != null ? left.getDepth() + 1 : 1;
+            int rightDepth = right != null ? right.getDepth() + 1 : 1;
+            depth = Math.max(leftDepth, rightDepth);
         }
     }
 
@@ -32,7 +45,7 @@ public class BinarySearchTree<T> {
         Node<T> curNode = root;
         while (true)
         {
-            if(((Comparable)curNode.value).equals(value))
+            if(((Comparable)curNode.value).compareTo(value) == 0)
             {
                 return curNode.parent;
             }
@@ -65,7 +78,7 @@ public class BinarySearchTree<T> {
         Node<T> parent = getParent(value);
         if(parent == null)
         {
-            return false;
+            return ((Comparable)root.value).compareTo(value) == 0;
         }
         else
         {
@@ -102,6 +115,7 @@ public class BinarySearchTree<T> {
                 if(parent.left == null)
                 {
                     parent.left = new Node<T>();
+                    parent.left.parent = parent;
                 }
                 parent.left.value = value;
             }
@@ -110,9 +124,117 @@ public class BinarySearchTree<T> {
                 if(parent.right == null)
                 {
                     parent.right = new Node<T>();
+                    parent.right.parent = parent;
                 }
                 parent.right.value = value;
             }
+            fixDepthProperty(parent);
+        }
+    }
+
+    public int getDepth(Node<T> node)
+    {
+        return node != null ? node.getDepth() : 0;
+    }
+
+    public void fixDepthProperty(Node<T> node)
+    {
+        while(node != null)
+        {
+            node.updateDepth();
+            Node<T> parent = node.parent;
+            if(getDepth(node.left) > (getDepth(node.right) + 1))
+            {
+                if(getDepth(node.left.right) > getDepth(node.left.left))
+                {
+
+                    rotateAntiClockwise(node.left);
+                    assert (root.parent == null);
+                }
+                rotateClockwise(node);
+            }
+            else if(getDepth(node.right) > (getDepth(node.left) + 1))
+            {
+                if(getDepth(node.right.left) > getDepth(node.right.right))
+                {
+                    rotateClockwise(node.right);
+                    assert (root.parent == null);
+                }
+                rotateAntiClockwise(node);
+                assert (root.parent == null);
+            }
+            node = parent;
+            assert (root.parent == null);
+        }
+    }
+
+    private void rotateAntiClockwise(Node<T> node)
+    {
+        boolean isRoot = node == root;
+        boolean isNodeLeftChild = node.parent != null ? node.parent.left == node : false;
+        Node<T> rightChild = node.right;
+        rightChild.parent = node.parent;
+        if(rightChild.parent != null)
+        {
+            if(isNodeLeftChild)
+            {
+                rightChild.parent.left = rightChild;
+            }
+            else
+            {
+                rightChild.parent.right = rightChild;
+            }
+        }
+
+        node.parent = rightChild;
+        node.right = rightChild.left;
+        rightChild.left = node;
+
+        if(node.right != null)
+        {
+            node.right.parent = node;
+        }
+
+        node.updateDepth();
+        rightChild.updateDepth();
+        if(isRoot)
+        {
+            root = rightChild;
+            assert (rightChild.parent == null);
+        }
+    }
+
+    private void rotateClockwise(Node<T> node)
+    {
+        boolean isRoot = node == root;
+        boolean isNodeLeftChild = node.parent != null ? node.parent.left == node : false;
+        Node<T> leftChild = node.left;
+        leftChild.parent  = node.parent;
+        if(leftChild.parent != null)
+        {
+            if(isNodeLeftChild)
+            {
+                leftChild.parent.left = leftChild;
+            }
+            else
+            {
+                leftChild.parent.right = leftChild;
+            }
+        }
+        node.parent = leftChild;
+        node.left = leftChild.right;
+        leftChild.right = node;
+        if(node.left != null)
+        {
+            node.left.parent = node;
+        }
+
+        node.updateDepth();
+        leftChild.updateDepth();
+        if(isRoot)
+        {
+            root = leftChild;
+            assert (root.parent == null);
         }
     }
 
@@ -246,15 +368,70 @@ public class BinarySearchTree<T> {
 
 
     public static void main(String[] args) {
+
+        List<Integer> input = new ArrayList<Integer>();
+        int maxNum = 10000000;
+        for(int i=0; i < maxNum; i++)
+        {
+            input.add((int)(Math.random() * maxNum));
+        }
+
+        Set<Integer> inputSet = new LinkedHashSet<Integer>(input);
+        System.out.println("Input size: " + inputSet.size());
+//        System.out.println("Input: " + inputSet);
+
         BinarySearchTree<Integer> bst = new BinarySearchTree<Integer>();
-        bst.add(3);
-        bst.add(2);
-        bst.add(1);
-        bst.add(4);
-        bst.add(5);
-        System.out.println(bst.doInOrderTraversal());
-        System.out.println(bst.doPreOrderTraversal());
-        System.out.println(bst.doPostOrderTraversal());
-        System.out.println(bst.doLevelWalk());
+//        bst.add(5);
+//        bst.add(4);
+//        bst.add(3);
+//        bst.add(2);
+//        bst.add(1);
+       // Insertion
+        List<Integer> list = new ArrayList<Integer>(maxNum);
+        long startTime = System.currentTimeMillis();
+        for(Integer value : input)
+        {
+            list.add(value);
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println("Time taken for insertion on a list: " + (endTime - startTime) + " ms");
+
+        startTime = System.currentTimeMillis();
+        for(Integer value : input)
+        {
+            bst.add(value);
+        }
+        endTime = System.currentTimeMillis();
+        System.out.println("Time taken for insertion on a bst: " + (endTime - startTime) + " ms");
+
+        TreeSet<Integer> javaBst = new TreeSet<Integer>();
+        startTime = System.currentTimeMillis();
+        for(Integer value : input)
+        {
+            javaBst.add(value);
+        }
+        endTime = System.currentTimeMillis();
+        System.out.println("Time taken for insertion on a java bst: " + (endTime - startTime) + " ms");
+
+        int aNum = (int)(Math.random() * maxNum);
+        startTime = System.currentTimeMillis();
+        list.contains(aNum);
+        endTime = System.currentTimeMillis();
+        System.out.println("Time taken for retrieval on a list: " + (endTime - startTime) + " ms");
+
+        startTime = System.currentTimeMillis();
+        bst.contains(aNum);
+        endTime = System.currentTimeMillis();
+        System.out.println("Time taken for retrieval on a bst: " + (endTime - startTime) + " ms");
+
+        startTime = System.currentTimeMillis();
+        javaBst.contains(aNum);
+        endTime = System.currentTimeMillis();
+        System.out.println("Time taken for retrieval on a java bst: " + (endTime - startTime) + " ms");
+        System.out.println("bst size: " + bst.doInOrderTraversal().size());
+        System.out.println("java bst size: " + javaBst.size());
+//        System.out.println("Pre order traversal: " + bst.doPreOrderTraversal());
+//        System.out.println("Post order traversal: " + bst.doPostOrderTraversal());
+//        System.out.println("Level walk: " + bst.doLevelWalk());
     }
 }
